@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -54,12 +54,14 @@ const AutocompleteComponent: React.FC<AutocompleteComponentProps> = ({
     setSelectedItems([]);
   };
 
-  const handleSetFocuse = () => {
-    setIsFocused(true);
-    inputRef.current?.focus();
-  };
   const handleChangeFocuse = () => {
-    setIsFocused(!isFocused);
+    if (isFocused) {
+      setIsFocused(false);
+      inputRef.current?.blur();
+    } else {
+      setIsFocused(true);
+      inputRef.current?.focus();
+    }
   };
 
   const handleParentLayout = (event: LayoutChangeEvent) => {
@@ -67,10 +69,25 @@ const AutocompleteComponent: React.FC<AutocompleteComponentProps> = ({
     setParentHeight(height);
   };
 
+  const handleSetQuery = (text: string) => {
+    setQuery(text);
+    setIsFocused(true);
+  };
+
+  const hasOptions = useMemo(
+    () => isFocused && query.length >= 3,
+    [isFocused, query]
+  );
+
   return (
-    <TouchableWithoutFeedback onPress={handleSetFocuse}>
+    <TouchableWithoutFeedback onPress={handleChangeFocuse}>
       <View style={styles.container} onLayout={handleParentLayout}>
-        <View style={[styles.autoCompleteInput, isFocused && styles.focusedAutoCompleteInput]}>
+        <View
+          style={[
+            styles.autoCompleteInput,
+            isFocused && styles.focusedAutoCompleteInput,
+          ]}
+        >
           <View style={styles.autoCompleteSelectedItemsAndInput}>
             {selectedItems.map((item, index) => (
               <View key={index} style={styles.selectedItem}>
@@ -81,12 +98,11 @@ const AutocompleteComponent: React.FC<AutocompleteComponentProps> = ({
               </View>
             ))}
             <TextInput
-              onPress={handleSetFocuse}
               ref={inputRef}
               style={styles.input}
               placeholder="Select options..."
               value={query}
-              onChangeText={(text) => setQuery(text)}
+              onChangeText={handleSetQuery}
             />
           </View>
           <SelectedItemsDisplay
@@ -97,7 +113,7 @@ const AutocompleteComponent: React.FC<AutocompleteComponentProps> = ({
           />
         </View>
 
-        {isFocused && (
+        {hasOptions && (
           <View style={[styles.resultContainer, { top: parentHeight + 5 }]}>
             {keys.map((key, index) => {
               const categoryTitle = key.charAt(0).toUpperCase() + key.slice(1);
@@ -162,7 +178,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   focusedAutoCompleteInput: {
-    borderColor: "#5bc6f8"
+    borderColor: "#5bc6f8",
   },
   autoCompleteSelectedItemsAndInput: {
     display: "flex",
@@ -190,7 +206,7 @@ const styles = StyleSheet.create({
     padding: 8,
     flexDirection: "row",
     alignItems: "center",
-    gap: 4
+    gap: 4,
   },
   selectedItemText: {
     marginRight: 5,
@@ -208,7 +224,7 @@ const styles = StyleSheet.create({
     borderColor: "#e0e0e0",
   },
   resultItem: {
-    paddingBottom: 8
+    paddingBottom: 8,
   },
   resultItemNotLastChild: {
     borderBottomColor: "#edebeb",
@@ -217,7 +233,7 @@ const styles = StyleSheet.create({
   removeItem: {
     color: "#ee4f4f",
     fontWeight: "bold",
-    paddingHorizontal: 2
+    paddingHorizontal: 2,
   },
   input: {},
   listContainer: {
@@ -236,7 +252,7 @@ const styles = StyleSheet.create({
   item: {
     color: "#4a4a4a",
     paddingHorizontal: 12,
-    paddingVertical: 8
+    paddingVertical: 8,
   },
   disabledItem: {
     backgroundColor: "#eaeef4",
